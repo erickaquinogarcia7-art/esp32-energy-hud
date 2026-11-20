@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07111f">
+<title>ESP32 Energy HUD • Bluetooth</title>
+<style>
+:root{--accent:#00eaff;--accent-rgb:0,234,255;--bg:#050b16;--panel:#0a1728;--muted:#8da8bd}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:#eafaff;background:radial-gradient(ellipse at 50% 18%,#123451 0%,#07111f 48%,#02050b 100%);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.13;background-image:linear-gradient(rgba(0,234,255,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(0,234,255,.18) 1px,transparent 1px);background-size:30px 30px}
+.wrap{position:relative;z-index:1;width:min(760px,100%);margin:auto;padding:20px 15px 36px}
+header{text-align:center;padding:9px 0 18px} .eyebrow{font-size:10px;letter-spacing:5px;color:var(--accent);font-weight:800}h1{font-size:clamp(23px,5vw,34px);letter-spacing:3px;margin:9px 0 5px;text-shadow:0 0 18px rgba(var(--accent-rgb),.65)}.sub{color:var(--muted);font-size:11px;letter-spacing:2px}
+.topline{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;margin:14px 0}.pill{border:1px solid rgba(var(--accent-rgb),.5);background:rgba(4,22,38,.8);border-radius:99px;padding:8px 12px;font-size:11px;color:var(--accent)}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ffb43c;margin-right:7px;box-shadow:0 0 9px currentColor}.connected .dot{background:#39f7a3}
+button,select{font:inherit}button{border:1px solid var(--accent);color:var(--accent);background:rgba(5,30,48,.92);border-radius:10px;padding:12px 15px;font-weight:800;letter-spacing:1px;cursor:pointer;box-shadow:0 0 13px rgba(var(--accent-rgb),.13);transition:transform .15s,background .15s}button:active{transform:scale(.97);background:var(--accent);color:#001018}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:linear-gradient(135deg,rgba(var(--accent-rgb),.22),rgba(7,27,48,.95));min-width:190px}.secondary{border-color:#426078;color:#c4d7e6;box-shadow:none}.full{width:100%}
+.card{border:1px solid rgba(var(--accent-rgb),.36);background:linear-gradient(145deg,rgba(9,25,43,.96),rgba(3,10,20,.96));border-radius:16px;padding:16px;margin:14px 0;box-shadow:0 8px 30px #0005,inset 0 0 28px rgba(var(--accent-rgb),.035)}.card h2{font-size:12px;letter-spacing:3px;color:var(--accent);margin:0 0 13px}.settings{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-size:10px;letter-spacing:1px;color:var(--muted);margin:0 0 7px}.field select{width:100%;border:1px solid rgba(var(--accent-rgb),.45);background:#061323;color:#eafaff;border-radius:9px;padding:11px;outline:none}.colors{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.swatch{width:29px;height:29px;border-radius:50%;padding:0;border:2px solid #ffffff66;box-shadow:0 0 10px currentColor}.swatch.active{outline:2px solid white;outline-offset:3px}
+.scene{height:300px;position:relative;overflow:hidden;border:1px solid rgba(var(--accent-rgb),.6);border-radius:17px;background:radial-gradient(circle at center,rgba(var(--accent-rgb),.18),#081625 44%,#020711 78%);box-shadow:0 0 30px rgba(var(--accent-rgb),.13),inset 0 0 35px rgba(var(--accent-rgb),.11)}.scene:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(transparent 0 4px,#ffffff08 5px)}.orbit{position:absolute;left:50%;top:50%;width:210px;height:210px;margin:-105px;border:1px dashed var(--accent);border-radius:50%;opacity:.5;animation:spin 13s linear infinite}.orbit.o2{width:265px;height:265px;margin:-132.5px;border-style:dotted;opacity:.22;animation-duration:22s;animation-direction:reverse}.orbit.o3{width:155px;height:155px;margin:-77.5px;border-width:2px;opacity:.25;animation-duration:8s}@keyframes spin{to{transform:rotate(360deg)}}
+.core{position:absolute;z-index:2;left:50%;top:50%;width:105px;height:105px;margin:-52.5px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#173d55,#06101e);border:3px solid var(--accent);color:white;font-size:12px;font-weight:900;letter-spacing:2px;text-shadow:0 0 12px var(--accent);box-shadow:0 0 20px var(--accent),inset 0 0 22px rgba(var(--accent-rgb),.24);transition:all .2s}.shape-circle{border-radius:50%}.shape-square{border-radius:7px}.shape-rounded{border-radius:27px}.shape-hexagon{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}.shape-diamond{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}.shape-triangle{clip-path:polygon(50% 0,100% 100%,0 100%)}.shape-octagon{clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}.shape-star{clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 95%,50% 72%,21% 95%,32% 57%,2% 35%,39% 35%)}.shape-shield{clip-path:polygon(10% 0,90% 0,90% 65%,50% 100%,10% 65%)}.shape-capsule{width:145px;height:78px;margin:-39px 0 0 -72.5px;border-radius:60px}.shape-cross{clip-path:polygon(35% 0,65% 0,65% 35%,100% 35%,100% 65%,65% 65%,65% 100%,35% 100%,35% 65%,0 65%,0 35%,35% 35%)}.shape-burst{clip-path:polygon(50% 0,60% 22%,83% 6%,78% 31%,100% 40%,78% 52%,94% 77%,68% 76%,60% 100%,46% 78%,22% 95%,26% 68%,0 55%,22% 43%,7% 18%,34% 25%)}
+.core.flash-on{animation:coreflash .65s ease-out}@keyframes coreflash{0%{transform:scale(1);filter:brightness(1)}36%{transform:scale(2.25);filter:brightness(2.5);box-shadow:0 0 85px var(--accent)}100%{transform:scale(1);filter:brightness(1)}}.wave{position:absolute;z-index:1;left:50%;top:50%;width:25px;height:25px;margin:-12.5px;border:2px solid var(--accent);border-radius:50%;opacity:0}.wave.go{animation:wave .8s ease-out}@keyframes wave{0%{transform:scale(1);opacity:1}100%{transform:scale(12);opacity:0}}.flash{position:absolute;z-index:4;inset:0;background:white;opacity:0;pointer-events:none}.flash.go{animation:flash .28s}@keyframes flash{0%{opacity:.75}100%{opacity:0}}.colorflash{position:absolute;z-index:3;inset:0;background:var(--accent);opacity:0;pointer-events:none}.colorflash.go{animation:colorflash .48s}@keyframes colorflash{0%{opacity:.5}100%{opacity:0}}.spark{position:absolute;z-index:5;left:50%;top:50%;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);animation:spark .8s ease-out forwards}@keyframes spark{0%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(0);opacity:0}}
+.state-panel{margin-top:14px;border:1px solid #29445b;border-radius:12px;background:#071524;padding:15px}.state-label{font-size:10px;color:var(--muted);letter-spacing:2px}.state-value{font-size:19px;font-weight:900;color:white;text-shadow:0 0 17px var(--accent);margin-top:6px}.log{min-height:22px;color:#abc2d2;font-size:12px;margin-top:14px}.hint{font-size:11px;color:var(--muted);line-height:1.5;margin:12px 2px 0}.bottom{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+@media(max-width:460px){.wrap{padding:14px 11px 28px}.scene{height:270px}.card{padding:13px}.settings{gap:9px}.bottom{grid-template-columns:1fr}.pill{font-size:10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">WIRELESS CONTROL INTERFACE</div>
+  <h1>ESP32 // ENERGY HUD</h1>
+  <div class="sub">PANEL DE CONTROL BLUETOOTH BLE</div>
+  <div class="topline">
+    <span class="pill" id="status"><span class="dot"></span>DESCONECTADO</span>
+    <button class="primary" id="connectBtn">CONECTAR ESP32</button>
+  </div>
+</header>
+
+<section class="card">
+  <h2>✦ PERSONALIZA TU INTERFAZ</h2>
+  <div class="settings">
+    <div class="field">
+      <label for="shape">FORMA DEL NÚCLEO</label>
+      <select id="shape">
+        <option value="circle">Circular</option><option value="square">Cuadrado</option>
+        <option value="rounded">Redondeado</option><option value="hexagon">Hexágono</option>
+        <option value="diamond">Diamante</option><option value="triangle">Triángulo</option>
+        <option value="octagon">Octágono</option><option value="star">Estrella</option>
+        <option value="shield">Escudo</option><option value="capsule">Cápsula</option>
+        <option value="cross">Cruz</option><option value="burst">Explosión</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="palette">COLOR DE ENERGÍA</label>
+      <select id="palette">
+        <option value="#00eaff">Azul neón</option><option value="#ff3b55">Rojo</option>
+        <option value="#ae63ff">Morado</option><option value="#00ed91">Verde</option>
+        <option value="#ff9d28">Naranja</option><option value="#ff55bb">Rosa</option>
+        <option value="#fff06a">Amarillo</option><option value="#f5faff">Blanco</option>
+        <option value="#397bff">Azul eléctrico</option><option value="#ff3bea">Magenta</option>
+      </select>
+    </div>
+  </div>
+  <div class="colors" id="swatches" aria-label="Colores rápidos"></div>
+  <div class="bottom">
+    <button class="secondary" id="randomBtn">✧ COMBINACIÓN ALEATORIA</button>
+    <button class="secondary" id="soundBtn">♫ SONIDO: APAGADO</button>
+  </div>
+</section>
+
+<section class="scene" id="scene" aria-label="Animación de energía">
+  <div class="orbit"></div><div class="orbit o2"></div><div class="orbit o3"></div>
+  <div class="core shape-circle" id="core">LISTO</div>
+  <div class="wave" id="wave"></div><div class="flash" id="flash"></div><div class="colorflash" id="colorflash"></div>
+</section>
+
+<div class="state-panel">
+  <div class="state-label">ESTADO DEL BOTÓN</div>
+  <div class="state-value" id="state">ESPERANDO</div>
+</div>
+<div class="log" id="log">Conecta la ESP32 para comenzar.</div>
+<p class="hint">La forma, el color, el sonido y las animaciones se muestran en este teléfono. La ESP32 solamente envía el evento del botón por Bluetooth BLE.</p>
+</div>
+
+<script>
+'use strict';
+const SERVICE='6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const TX='6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+const shapes=['circle','square','rounded','hexagon','diamond','triangle','octagon','star','shield','capsule','cross','burst'];
+const colors=['#00eaff','#ff3b55','#ae63ff','#00ed91','#ff9d28','#ff55bb','#fff06a','#f5faff','#397bff','#ff3bea'];
+let device=null,server=null,txChar=null,connected=false,soundOn=false,audio=null,buffer='';
+const $=id=>document.getElementById(id);
+const core=$('core');
+function setColor(hex){
+  if(!colors.includes(hex)) return;
+  $('palette').value=hex;
+  const rgb=hex.match(/[a-f\d]{2}/gi).map(v=>parseInt(v,16)).join(',');
+  document.documentElement.style.setProperty('--accent',hex);
+  document.documentElement.style.setProperty('--accent-rgb',rgb);
+  localStorage.setItem('hud-color',hex);
+  [...$('swatches').children].forEach(b=>b.classList.toggle('active',b.dataset.color===hex));
+}
+function setShape(shape){if(!shapes.includes(shape))return;shapes.forEach(s=>core.classList.remove('shape-'+s));core.classList.add('shape-'+shape);$('shape').value=shape;localStorage.setItem('hud-shape',shape)}
+function renderSwatches(){colors.forEach(c=>{const b=document.createElement('button');b.className='swatch';b.type='button';b.dataset.color=c;b.style.background=c;b.style.color=c;b.title=c;b.setAttribute('aria-label','Elegir color '+c);b.addEventListener('click',()=>setColor(c));$('swatches').appendChild(b)})}
+$('shape').addEventListener('change',e=>setShape(e.target.value));
+$('palette').addEventListener('change',e=>setColor(e.target.value));
+$('randomBtn').addEventListener('click',()=>{setShape(shapes[Math.floor(Math.random()*shapes.length)]);setColor(colors[Math.floor(Math.random()*colors.length)]);$('log').textContent='Nueva combinación aplicada.'});
+renderSwatches();
+setShape(shapes.includes(localStorage.getItem('hud-shape'))?localStorage.getItem('hud-shape'):'circle');
+setColor(colors.includes(localStorage.getItem('hud-color'))?localStorage.getItem('hud-color'):'#00eaff');
+function setStatus(text,isConnected){connected=isConnected;$('status').innerHTML='<span class="dot"></span>'+text;$('status').classList.toggle('connected',isConnected);$('connectBtn').textContent=isConnected?'DESCONECTAR':'CONECTAR ESP32'}
+function beep(){if(!soundOn||!audio)return;const now=audio.currentTime;const osc=audio.createOscillator(),gain=audio.createGain();osc.type='triangle';osc.frequency.setValueAtTime(880,now);osc.frequency.exponentialRampToValueAtTime(190,now+.23);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.16,now+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+.27);osc.connect(gain);gain.connect(audio.destination);osc.start(now);osc.stop(now+.28)}
+$('soundBtn').addEventListener('click',async()=>{try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();await audio.resume();soundOn=!soundOn;$('soundBtn').textContent=soundOn?'♫ SONIDO: ACTIVADO':'♫ SONIDO: APAGADO';if(soundOn)beep()}catch(e){$('log').textContent='No fue posible activar el sonido en este navegador.'}});
+function animateEvent(){
+  [core,$('wave'),$('flash'),$('colorflash')].forEach(el=>{el.classList.remove('flash-on','go');void el.offsetWidth;el.classList.add(el===core?'flash-on':'go')});
+  const scene=$('scene');for(let i=0;i<26;i++){const p=document.createElement('i');p.className='spark';const a=Math.random()*Math.PI*2,d=50+Math.random()*140;p.style.setProperty('--dx',Math.cos(a)*d+'px');p.style.setProperty('--dy',Math.sin(a)*d+'px');scene.appendChild(p);setTimeout(()=>p.remove(),850)}
+  beep();$('state').textContent='ACTIVADO';$('log').textContent='¡Botón detectado!';setTimeout(()=>{$('state').textContent='ESPERANDO'},650);
+}
+function onData(event){const bytes=new Uint8Array(event.target.value.buffer,event.target.value.byteOffset,event.target.value.byteLength);buffer+=new TextDecoder().decode(bytes);let pos;while((pos=buffer.indexOf('\n'))>=0){const line=buffer.slice(0,pos).trim();buffer=buffer.slice(pos+1);if(!line)continue;if(line==='DISPARO' || line.startsWith('EVENTO:')){animateEvent()}else if(line==='READY'){$('log').textContent='ESP32 lista. Presiona el botón físico.'}else{$('log').textContent=line}}}
+async function disconnect(){try{if(device&&device.gatt.connected)device.gatt.disconnect()}catch(e){}txChar=null;server=null;setStatus('DESCONECTADO',false);$('log').textContent='Bluetooth desconectado.'}
+async function connect(){
+  if(connected){await disconnect();return}
+  if(!navigator.bluetooth){$('log').textContent='Este navegador no ofrece Web Bluetooth. Usa Chrome actualizado en Android o Chrome en una computadora compatible.';return}
+  $('connectBtn').disabled=true;$('log').textContent='Buscando ESP32 por Bluetooth BLE...';
+  try{
+    device=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE]}]});
+    device.addEventListener('gattserverdisconnected',()=>{txChar=null;server=null;setStatus('DESCONECTADO',false);$('log').textContent='Se perdió la conexión Bluetooth.'});
+    server=await device.gatt.connect();
+    const service=await server.getPrimaryService(SERVICE);
+    txChar=await service.getCharacteristic(TX);
+    await txChar.startNotifications();
+    txChar.addEventListener('characteristicvaluechanged',onData);
+    setStatus('CONECTADO A '+(device.name||'ESP32'),true);
+    $('log').textContent='Conexión lista. Presiona el botón físico de la ESP32.';
+  }catch(err){$('log').textContent='No se pudo conectar: '+(err.message||err)}
+  finally{$('connectBtn').disabled=false}
+}
+$('connectBtn').addEventListener('click',connect);
+</script>
+</body>
+</html>
